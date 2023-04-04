@@ -10,8 +10,7 @@ hash_arc_number = function(data, id_field) {
 
 #' Load all REDCap instruments into a single large data frame
 #'
-#' @import dplyr
-#' @import tidyr
+#' @import tidyverse
 #' @import REDCapR
 #' @export
 #' @param API_key The REDCap API token.
@@ -219,7 +218,8 @@ load_cdw_data = function(protocol_names,
 
 #' Combine the REDCap and CDW data into a single long format data frame.
 #' @export
-#' @param instrument_env The environment containing individual REDCap instruments. Default: .InstrumentEnv
+#' @param redcap_data The full REDCap data frame from `load_redcap_instruments()`.
+#' @param cdw_data The full CDW data frame from `load_cdw_data()`.
 #' @return The fully merged REDCap and CDW data in long format.
 combine_redcap_and_cdw_data = function(redcap_data, cdw_data) {
   if (!exists('.redcap_metadata', envir = globalenv())) {

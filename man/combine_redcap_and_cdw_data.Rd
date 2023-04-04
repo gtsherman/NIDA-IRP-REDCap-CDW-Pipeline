@@ -7,7 +7,9 @@
 combine_redcap_and_cdw_data(redcap_data, cdw_data)
 }
 \arguments{
-\item{instrument_env}{The environment containing individual REDCap instruments. Default: .InstrumentEnv}
+\item{redcap_data}{The full REDCap data frame from \code{load_redcap_instruments()}.}
+
+\item{cdw_data}{The full CDW data frame from \code{load_cdw_data()}.}
 }
 \value{
 The fully merged REDCap and CDW data in long format.
