@@ -10,7 +10,9 @@ hash_arc_number = function(data, id_field) {
 
 #' Load all REDCap instruments into a single large data frame
 #'
-#' @import tidyverse
+#' @import dplyr
+#' @import tidyr
+#' @import REDCapR
 #' @export
 #' @param API_key The REDCap API token.
 #' @param arc_number_field_name The name of the ARC # field in your REDCap project.
