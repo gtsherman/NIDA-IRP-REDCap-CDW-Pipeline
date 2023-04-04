@@ -1,0 +1,15 @@
+Package: redcapCDW
+Title: Integrate REDCap and CDW data for NIDA IRP
+Version: 0.0.1
+Authors@R: 
+    person("Garrick", "Sherman", , "garrick.sherman@nih.org", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-2146-0706"))
+Description: What the package does (one paragraph).
+License: `use_mit_license()`
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    dplyr,
+    magrittr,
+    readr
