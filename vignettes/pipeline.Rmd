@@ -1,0 +1,133 @@
+---
+title: "REDCap/CDW Pipeline"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, echo=FALSE}
+library(redcapCDW)
+```
+
+# Setup
+
+## API token
+
+Before you can load REDCap data, you must request an API token within REDCap. You can do this using the API link in the left-hand navigation within REDCap. If you don't see an API link, please let Garrick Sherman know.
+
+To store the API token in R, you'll need to edit your `.Renviron` file. First, install a couple of useful packages:
+
+```{r, eval=FALSE}
+install.packages('remotes')
+remotes::install_cran('usethis')
+```
+
+Then, open the `.Renviron` file with the following line of code:
+
+```{r, eval=FALSE}
+usethis::edit_r_environ()
+```
+
+This should open the file. Add a line to the file like the following (replacing PROJ and API_TOKEN with your project name and actual API token, respectively). Then save the file, and then close and reopen your R session.
+
+```{txt}
+PROJ_key="API_TOKEN"
+```
+
+## VPN
+
+If you are offsite, you will need to connect to VPN in order to access CDW data or REDCap data from redcap.niddk.nih.gov.
+
+
+# Using the pipeline
+
+## Loading REDCap data
+
+The simplest way to load REDCap data is using the `load_redcap_instruments()` function.
+
+```{r, eval=FALSE}
+redcap_data = load_redcap_instruments(Sys.getenv('PROJ_key'), 'arcnum')
+```
+
+Notice the call to `Sys.getenv('PROJ_key')`. This is how you load the API key you set up in your `.Renviron` file above. Using this approach will prevent your API key from being saved in insecure locations.
+
+The second argument, `'arcnum'`, is the name given to the ARC # field in your specific REDCap project. There are a few other options you could pass to this function, too. See `help(load_redcap_instruments)` for more details.
+
+### Individual instruments
+
+`load_redcap_instruments()` loads a very large, wide data frame containing all REDCap responses. This might be too much data to work with at one time. If so, you can use `load_individual_redcap_instruments()` to load each instrument as a separate data frame within your R environment:
+
+```{r, eval=FALSE}
+load_individual_redcap_instruments(Sys.getenv('PROJ_key'), 'arcnum')
+```
+
+Alternatively, you can set `keep_individual_instruments = TRUE` in `load_redcap_instruments()` to load both the complete data frame and the individual instruments.
+
+```{r, eval=FALSE}
+redcap_data = load_redcap_instruments(Sys.getenv('PROJ_key'), 'arcnum',
+                                      keep_individual_instruments = TRUE)
+```
+
+Loading individual instruments could create a lot of objects in your R environment! If things get too cluttered, remove them from your environment:
+
+```{r, eval=FALSE}
+clear_individual_redcap_instruments()
+```
+
+If you want an instrument to persist, rename it before calling `clear_individual_redcap_instruments()`.
+
+## Loading CDW data
+
+You can load CDW data as follows:
+
+```{r, eval=FALSE}
+cdw_data = load_cdw_data('123Control(Proj)', '//network-path/to/data')
+```
+
+There are several things to note here:
+
+* The first argument is the "protocol name." This is the first part of each file name that is similar across files.
+* You can specify multiple "protocol names" using a vector, e.g. `c('123Control(Proj)', '123Test(Proj)')`. These will all be loaded into a single data frame.
+* You can also use asterisks to specify wildcards. For example, instead of listing individual protocol names as above, you could simply put `'123*'`.
+
+By default, the `load_cdw_data()` function will also load separate data frames in your R environment, one for each CDW data type. This is because different CDW data types do not perfectly conform to a unified structure, so they are modified to fit into the single large data frame returned by `load_cdw_data()`. Having the individual data frames allows you to refer back to the original, unmodified versions of the data. These data frames all begin with `cdw_`. To disable this, set `keep_individual_instruments = FALSE` in your call to `load_cdw_data()`:
+
+```{r, eval=FALSE}
+cdw_data = load_cdw_data('123Control(Proj)', '//network-path/to/data',
+                         keep_individual_instruments = FALSE)
+```
+
+Finally, it's worth noting that the CDW data frame is in long format. This is the best way to accommodate CDW's mixed data types.
+
+## Combining REDCap and CDW data
+
+Use the following to combine your REDCap and CDW data:
+
+```{r, eval=FALSE}
+all_data = combine_redcap_and_cdw_data(redcap_data, cdw_data)
+```
+
+This will produce a long format data frame containing both REDCap and CDW data. That's pretty much it!
+
+## IDs
+
+There are three types of IDs floating around here:
+
+  * REDCap IDs
+  * CDW ARC #s
+  * Hashed CDW ARC #s
+
+Hashing the CDW ARC #s is a way of protecting those IDs. By default, the `load_redcap_instruments()` and `load_cdw_data()` functions will hash ARC #s as a protective measure. You can disable this by setting `hide_arc_number = FALSE` when calling either function.
+
+When you combine REDCap and CDW data using the `combine_redcap_and_cdw_data()` function, hashed ARC #s will be automatically changed to REDCap IDs. If a hashed ARC # doesn't have a corresponding REDCap ID, it will be left as a hashed ARC #. If you have used `hide_arc_number = FALSE` when loading data, you must also specify `arc_number_hidden = FALSE` when calling `combine_redcap_and_cdw_data()`.
+
+To view the correspondence between REDCap IDs and hashed & unhashed ARC #s, call `redcap_cdw_id_mapping()`.

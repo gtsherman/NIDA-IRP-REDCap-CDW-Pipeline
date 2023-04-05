@@ -15,3 +15,7 @@ Depends:
 Imports: 
     REDCapR,
     magrittr
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
