@@ -4,7 +4,7 @@
 \alias{combine_redcap_and_cdw_data}
 \title{Combine the REDCap and CDW data into a single long format data frame.}
 \usage{
-combine_redcap_and_cdw_data(redcap_data, cdw_data)
+combine_redcap_and_cdw_data(redcap_data, cdw_data, arc_numbers_hidden = T)
 }
 \arguments{
 \item{redcap_data}{The full REDCap data frame from \code{load_redcap_instruments()}.}

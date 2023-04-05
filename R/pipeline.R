@@ -221,7 +221,8 @@ load_cdw_data = function(protocol_names,
 #' @param redcap_data The full REDCap data frame from `load_redcap_instruments()`.
 #' @param cdw_data The full CDW data frame from `load_cdw_data()`.
 #' @return The fully merged REDCap and CDW data in long format.
-combine_redcap_and_cdw_data = function(redcap_data, cdw_data) {
+combine_redcap_and_cdw_data = function(redcap_data, cdw_data,
+                                       arc_numbers_hidden = T) {
   if (!exists('.redcap_metadata', envir = globalenv())) {
     stop('Missing REDCap metadata. Please reload REDCap data. Do not remove hidden items in your global environment.')
   }
@@ -250,7 +251,23 @@ combine_redcap_and_cdw_data = function(redcap_data, cdw_data) {
       bind_rows(redcap_instruments_long)
   }
 
+  id_map = redcap_cdw_id_mapping()
+  id_name = names(id_map)[1]
+  if (arc_numbers_hidden) {
+    id_map = id_map %>% select(-raw_arc_number)
+  } else {
+    id_map = id_map %>%
+      select({{ id_name }}, raw_arc_number) %>%
+      mutate(raw_arc_number = as.character(raw_arc_number))
+  }
+  names(id_map)[2] = 'arc_num_inter'
+
   cdw_data %>%
+    rename(arc_num_inter = id_name) %>%
+    mutate(arc_num_inter = as.character(arc_num_inter)) %>%
+    left_join(id_map, by = 'arc_num_inter') %>%
+    mutate(id = ifelse(is.na(.data[[id_name]]), arc_num_inter, .data[[id_name]])) %>%
+    select(-arc_num_inter) %>%
     mutate(redcap_event_name = 'CDW') %>%
     rename(instrument_name = test,
            value = response) %>%
