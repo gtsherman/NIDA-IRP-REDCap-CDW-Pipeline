@@ -28,7 +28,7 @@ load_redcap_instruments = function(API_key,
   redcap_server_choice = match.arg(redcap_server)
   redcap_server_url = paste0('https://',
                              redcap_server_choice,
-                             '.niddk.nih.gov/redcap_v12.0.19/api/')
+                             '.niddk.nih.gov/redcap_v13.1.37/api/')
 
   # load REDCap data
   data = REDCapR::redcap_read(redcap_uri = redcap_server_url,
