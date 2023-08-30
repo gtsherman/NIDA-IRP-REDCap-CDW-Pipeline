@@ -93,7 +93,7 @@ load_individual_redcap_instruments = function(API_key,
   redcap_server_choice = match.arg(redcap_server)
   redcap_server_url = paste0('https://',
                              redcap_server_choice,
-                             '.niddk.nih.gov/redcap_v12.0.19/api/')
+                             '.niddk.nih.gov/redcap_v13.1.37/api/')
 
   # load REDCap metadata and store it in a hidden object
   # may be needed for future work with REDCap data
@@ -237,12 +237,23 @@ combine_redcap_and_cdw_data = function(redcap_data, cdw_data,
   redcap_instruments_long = tibble()
   forms = redcap_metadata %>% distinct(form_name)
   for (form in forms$form_name) {
+    form_fields = redcap_metadata %>%
+      filter(form_name == form,
+             field_name != id_name) %>%
+      .$field_name
+
     instrument = redcap_data %>%
-      select(id, starts_with('redcap'), matches(paste0(form, '_timestamp')),
-             any_of(redcap_metadata %>%
-                      filter(form_name == form,
-                             field_name != id_name) %>%
-                      .$field_name))
+      select({{ id_name }}, starts_with('redcap'), matches(paste0(form, '_timestamp')),
+             any_of(form_fields))
+
+    # If a form exists but is not assigned to an event, it seems to exist in the
+    # metadata but not in the data. This causes problems, so we check whether
+    # the field names exist in the data and ignore the form if not.
+    if (length(intersect(names(instrument), form_fields)) == 0) {
+      print(paste0('Could not load ', form))
+      next
+    }
+
     redcap_instruments_long = instrument %>%
       mutate(instrument_name = form,
              across(-c(ends_with('timestamp')), ~as.character(.))) %>%
@@ -263,17 +274,18 @@ combine_redcap_and_cdw_data = function(redcap_data, cdw_data,
   names(id_map)[2] = 'arc_num_inter'
 
   cdw_data %>%
-    rename(arc_num_inter = id_name) %>%
+    rename(arc_num_inter = id) %>%
     mutate(arc_num_inter = as.character(arc_num_inter)) %>%
     left_join(id_map, by = 'arc_num_inter') %>%
-    mutate(id = ifelse(is.na(.data[[id_name]]), arc_num_inter, .data[[id_name]])) %>%
+    mutate(!!id_name := as.character(ifelse(is.na(.data[[id_name]]), arc_num_inter, .data[[id_name]]))) %>%
     select(-arc_num_inter) %>%
     mutate(redcap_event_name = 'CDW') %>%
     rename(instrument_name = test,
            value = response) %>%
     bind_rows(redcap_instruments_long %>%
-                rename(question = name)) %>%
-    select(id, redcap_event_name, date, instrument_name, question, value)
+                rename(question = name) %>%
+                mutate(across({{ id_name }}, ~as.character(.)))) %>%
+    select({{ id_name }}, redcap_event_name, date, instrument_name, question, value)
 }
 
 

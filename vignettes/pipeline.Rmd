@@ -37,11 +37,13 @@ Then, open the `.Renviron` file with the following line of code:
 usethis::edit_r_environ()
 ```
 
-This should open the file. Add a line to the file like the following (replacing PROJ and API_TOKEN with your project name and actual API token, respectively). Then save the file, and then close and reopen your R session.
+This should open the file. Add a line to the file like the following (replacing PROJ and API_TOKEN with your project name and actual API token, respectively). 
 
 ```{txt}
 PROJ_key="API_TOKEN"
 ```
+
+Save the file, and then close and reopen your R session. In RStudio, you can do this by clicking Session > Restart R in the top menu.
 
 ## VPN
 
@@ -50,7 +52,15 @@ If you are offsite, you will need to connect to VPN in order to access CDW data 
 
 # Using the pipeline
 
-## Loading REDCap data
+## Loading the pipeline
+
+Load the pipeline in the usual way for R packages:
+
+```{r, eval=FALSE}
+library(redcapCDW)
+```
+
+## Downloading REDCap data
 
 The simplest way to load REDCap data is using the `load_redcap_instruments()` function.
 
@@ -85,12 +95,18 @@ clear_individual_redcap_instruments()
 
 If you want an instrument to persist, rename it before calling `clear_individual_redcap_instruments()`.
 
-## Loading CDW data
+## Downloading CDW data
 
-You can load CDW data as follows:
+You can load CDW data as follows on a PC:
 
 ```{r, eval=FALSE}
-cdw_data = load_cdw_data('123Control(Proj)', '//network-path/to/data')
+cdw_data = load_cdw_data('123Control(Proj)', '//nida-filestore/path/to/data')
+```
+
+On a Mac, you should mount nida-filestore, and then use `/Volumes/` instead of `//nida-filestore/` in the second argument, like so:
+
+```{r, eval=FALSE}
+cdw_data = load_cdw_data('123Control(Proj)', '/Volumes/path/to/data')
 ```
 
 There are several things to note here:
@@ -102,7 +118,7 @@ There are several things to note here:
 By default, the `load_cdw_data()` function will also load separate data frames in your R environment, one for each CDW data type. This is because different CDW data types do not perfectly conform to a unified structure, so they are modified to fit into the single large data frame returned by `load_cdw_data()`. Having the individual data frames allows you to refer back to the original, unmodified versions of the data. These data frames all begin with `cdw_`. To disable this, set `keep_individual_instruments = FALSE` in your call to `load_cdw_data()`:
 
 ```{r, eval=FALSE}
-cdw_data = load_cdw_data('123Control(Proj)', '//network-path/to/data',
+cdw_data = load_cdw_data('123Control(Proj)', '//nida-filestore/path/to/data',
                          keep_individual_instruments = FALSE)
 ```
 
