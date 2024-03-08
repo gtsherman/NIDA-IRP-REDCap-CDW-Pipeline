@@ -114,7 +114,7 @@ load_individual_redcap_instruments = function(API_key,
   forms = metadata %>% distinct(form_name)
   for (form in forms$form_name) {
     instrument = complete_redcap_data %>%
-      select(id, starts_with('redcap'), matches(paste0(form, '_timestamp')),
+      select(id, {{ id_name }}, starts_with('redcap'), matches(paste0(form, '_timestamp')),
              any_of(metadata %>%
                       filter(form_name == form,
                              field_name != id_name) %>%
