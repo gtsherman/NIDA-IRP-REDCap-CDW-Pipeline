@@ -145,7 +145,13 @@ load_and_prep_cdw_data = function(filename,
                                   base_filename,
                                   protocol_has_wildcard = F,
                                   hide_arc_number = T) {
-  data = read_csv(Sys.glob(paste0(base_filename, '*', filename, '.csv'))) %>%
+  data = read_csv(Sys.glob(paste0(base_filename, '*', filename, '.csv')))
+
+  if (nrow(data) == 0) {
+    stop('No CDW data was loaded. Have you mounted the network drive?')
+  }
+
+  data = data %>%
     rename(id = `Arc#`)
 
   if (hide_arc_number) {
@@ -256,7 +262,8 @@ combine_redcap_and_cdw_data = function(redcap_data, cdw_data,
 
     redcap_instruments_long = instrument %>%
       mutate(instrument_name = form,
-             across(-c(ends_with('timestamp')), ~as.character(.))) %>%
+             across(-c(ends_with('timestamp')), ~as.character(.)),
+             across(c(ends_with('timestamp')), ~as_datetime(.))) %>%
       pivot_longer(-c({{ id_name }}, starts_with('redcap_'), instrument_name, matches(paste0(form, '_timestamp')))) %>%
       rename(any_of(c(date = paste0(form, '_timestamp')))) %>%
       bind_rows(redcap_instruments_long)
