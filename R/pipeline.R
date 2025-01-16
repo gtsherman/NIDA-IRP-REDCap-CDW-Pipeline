@@ -28,7 +28,7 @@ load_redcap_instruments = function(API_key,
   redcap_server_choice = match.arg(redcap_server)
   redcap_server_url = paste0('https://',
                              redcap_server_choice,
-                             '.niddk.nih.gov/redcap_v13.1.37/api/')
+                             '.niddk.nih.gov/redcap_v14.5.25/api/')
 
   # load REDCap data
   data = REDCapR::redcap_read(redcap_uri = redcap_server_url,
@@ -93,7 +93,7 @@ load_individual_redcap_instruments = function(API_key,
   redcap_server_choice = match.arg(redcap_server)
   redcap_server_url = paste0('https://',
                              redcap_server_choice,
-                             '.niddk.nih.gov/redcap_v13.1.37/api/')
+                             '.niddk.nih.gov/redcap_v14.5.25/api/')
 
   # load REDCap metadata and store it in a hidden object
   # may be needed for future work with REDCap data
@@ -177,12 +177,14 @@ load_cdw_data = function(protocol_names,
   base_filename = file.path(path, protocol_names)
 
   questionnaires = load_and_prep_cdw_data('TestsandQuestionnaires', base_filename, hide_arc_number = hide_arc_number)
+  questionnaire_scores = load_and_prep_cdw_data('TestsandQuestionnairesScores', base_filename, hide_arc_number = hide_arc_number)
   vitals = load_and_prep_cdw_data('VitalSigns', base_filename, hide_arc_number = hide_arc_number)
-  drugs = load_and_prep_cdw_data('DrugIntake', base_filename, hide_= hide_arc_number)
-  bio_samples = load_and_prep_cdw_data('BiologicalSamples', base_filename, hide_= hide_arc_number)
+  drugs = load_and_prep_cdw_data('DrugIntake', base_filename, hide_arc_number = hide_arc_number)
+  bio_samples = load_and_prep_cdw_data('BiologicalSamples', base_filename, hide_arc_number = hide_arc_number)
 
   if (keep_individual_instruments) {
     .GlobalEnv$cdw_questionnaires = questionnaires
+    .GlobalEnv$cdw_questionnaire_scores = questionnaire_scores
     .GlobalEnv$cdw_vitals = vitals
     .GlobalEnv$cdw_drugs = drugs
     .GlobalEnv$cdw_bio_samples = bio_samples
@@ -193,19 +195,27 @@ load_cdw_data = function(protocol_names,
 
   all_cdw_data = questionnaires %>%
     select(id, TDesc, Date, QuestionID, Answer) %>%
+    bind_rows(questionnaire_scores %>%
+                mutate(Score = as.character(Score)) %>%
+                rename(QuestionID = ScoreType,
+                       Answer = Score)) %>%
+                select(id, TDesc, Date, QuestionID, Answer) %>%
     bind_rows(vitals %>%
-                mutate(TDesc = 'Vitals') %>%
+                mutate(TDesc = 'Vitals',
+                       Value = as.character(Value)) %>%
                 select(id, TDesc, `Vital Signs`, `Date Entered`, Value) %>%
                 rename(QuestionID = `Vital Signs`,
                        Date = `Date Entered`,
                        Answer = Value)) %>%
     bind_rows(drugs %>%
-                mutate(TDesc = 'DrugsAdministered') %>%
+                mutate(TDesc = 'DrugsAdministered',
+                       Dosage = as.character(Dosage)) %>%
                 select(id, TDesc, Drug, `Date Administered`, Dosage) %>%
                 rename(QuestionID = Drug,
                        Date = `Date Administered`,
                        Answer = Dosage)) %>%
     bind_rows(bio_samples %>%
+                mutate(Value = as.character(Value)) %>%
                 select(id, Lab, Observation, `Collection Date`, Value) %>%
                 rename(TDesc = Lab,
                        QuestionID = Observation,
